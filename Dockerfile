@@ -25,7 +25,7 @@ WORKDIR /app
 COPY --from=build-go /app/main /app/
 
 # Copy the React build output from the build-react stage
-COPY --from=build-react /app/dist /app/static
+COPY --from=build-react /app/dist /app/web/dist
 
 COPY .env*.yml ./
 
