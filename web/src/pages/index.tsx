@@ -1,3 +1,5 @@
+import type { ICounter } from "../lib/models";
+
 import {
     Button,
     Container,
@@ -13,7 +15,6 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 
 import Counter from "../components/Counter";
-import { ICounter } from "../lib/models";
 
 const AddNewCounterDialog = ({
     isDialogOpen,
