@@ -3,6 +3,8 @@ package queries
 import (
 	"context"
 	"main/app/models"
+	"math"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -96,6 +98,91 @@ func (q *DataQueries) GetCounterSum(counterID string) (bson.M, error) {
 	cursor.Decode(&data)
 
 	return data, nil
+}
+
+func (q *DataQueries) GetCounterAvg(counterID string) (bson.M, error) {
+	var data bson.M
+
+	id, err := primitive.ObjectIDFromHex(counterID)
+	if err != nil {
+		return data, err
+	}
+
+	matchStage := bson.D{{Key: "$match", Value: bson.D{{Key: "counter_ref", Value: id}}}}
+	groupStage := bson.D{
+		{
+			Key: "$group",
+			Value: bson.D{
+				{Key: "_id", Value: "$counter_ref"},
+				{Key: "total", Value: bson.D{{Key: "$sum", Value: "$number"}}},
+				{Key: "firstDate", Value: bson.D{{Key: "$min", Value: "$createdAt"}}},
+				{Key: "lastDate", Value: bson.D{{Key: "$max", Value: "$createdAt"}}},
+			},
+		}}
+
+	pipeline := mongo.Pipeline{matchStage, groupStage}
+	cursor, err := q.Collection.Aggregate(context.TODO(), pipeline)
+	if err != nil {
+		return data, err
+	}
+
+	cursor.Next(context.TODO())
+
+	if err = cursor.Err(); err != nil {
+		return data, err
+	}
+	cursor.Decode(&data)
+
+	fd := data["firstDate"].(primitive.DateTime).Time().UTC()
+	ld := time.Now()
+	total := data["total"].(int32)
+
+	avg := float32(total) / float32(ld.Sub(fd)/(24*time.Hour))
+
+	return bson.M{"_id": data["_id"], "avg": avg}, nil
+}
+
+func (q *DataQueries) GetCounterStats(counterID string) (bson.M, error) {
+	var data bson.M
+
+	id, err := primitive.ObjectIDFromHex(counterID)
+	if err != nil {
+		return data, err
+	}
+
+	matchStage := bson.D{{Key: "$match", Value: bson.D{{Key: "counter_ref", Value: id}}}}
+	groupStage := bson.D{
+		{
+			Key: "$group",
+			Value: bson.D{
+				{Key: "_id", Value: "$counter_ref"},
+				{Key: "total", Value: bson.D{{Key: "$sum", Value: "$number"}}},
+				{Key: "firstDate", Value: bson.D{{Key: "$min", Value: "$createdAt"}}},
+				{Key: "lastDate", Value: bson.D{{Key: "$max", Value: "$createdAt"}}},
+			},
+		}}
+
+	pipeline := mongo.Pipeline{matchStage, groupStage}
+	cursor, err := q.Collection.Aggregate(context.TODO(), pipeline)
+	if err != nil {
+		return data, err
+	}
+
+	cursor.Next(context.TODO())
+
+	if err = cursor.Err(); err != nil {
+		return data, err
+	}
+	cursor.Decode(&data)
+
+	fd := data["firstDate"].(primitive.DateTime).Time().UTC()
+	ld := time.Now().UTC()
+	total := data["total"].(int32)
+
+	days := math.Ceil(ld.Sub(fd).Hours() / 24)
+	avg := float64(total) / days
+
+	return bson.M{"_id": data["_id"], "avg": avg, "total": total, "days": days}, nil
 }
 
 func (q *DataQueries) GetCounterData(counterID string) ([]models.Data, error) {

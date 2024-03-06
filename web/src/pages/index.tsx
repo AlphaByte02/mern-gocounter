@@ -10,11 +10,14 @@ import {
     Fab,
     Unstable_Grid2 as Grid,
     TextField,
+    Typography,
 } from "@mui/material";
 import axios from "axios";
 import { useEffect, useState } from "react";
 
 import Counter from "../components/Counter";
+
+import { isEmpty } from "../lib/helpers";
 
 const AddNewCounterDialog = ({
     isDialogOpen,
@@ -32,8 +35,13 @@ const AddNewCounterDialog = ({
         setCounterName("");
     }
 
+    function handleOnClose() {
+        onClose?.();
+        setCounterName("");
+    }
+
     return (
-        <Dialog fullWidth={true} maxWidth="sm" open={isDialogOpen} onClose={onClose}>
+        <Dialog fullWidth={true} maxWidth="sm" open={isDialogOpen} onClose={handleOnClose}>
             <DialogTitle>Aggiungi Counter</DialogTitle>
             <DialogContent>
                 <TextField
@@ -47,7 +55,7 @@ const AddNewCounterDialog = ({
                 />
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose} color="secondary">
+                <Button onClick={handleOnClose} color="secondary">
                     Cancella
                 </Button>
                 <Button onClick={onFinish} color="primary">
@@ -58,9 +66,49 @@ const AddNewCounterDialog = ({
     );
 };
 
+const DeleteCounterDialog = ({
+    isDialogOpen,
+    counter,
+    onConfirm,
+    onClose,
+}: {
+    isDialogOpen: boolean;
+    counter?: ICounter;
+    onConfirm: () => void;
+    onClose: () => void;
+}) => {
+    function onFinish() {
+        onConfirm?.();
+    }
+
+    function handleOnClose() {
+        onClose?.();
+    }
+
+    return (
+        <Dialog fullWidth={true} maxWidth="sm" open={isDialogOpen} onClose={handleOnClose}>
+            <DialogTitle>Elimina Counter</DialogTitle>
+            <DialogContent>
+                <Typography>Sei sicuro di voler eliminare &quot;{counter?.name}&quot;?</Typography>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={handleOnClose} color="secondary">
+                    Annulla
+                </Button>
+                <Button onClick={onFinish} color="error">
+                    Cancella
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+};
+
 function App() {
     const [counters, setCounters] = useState<ICounter[]>([]);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
+    const [currentCounter, setCurrentCounter] = useState<ICounter>();
 
     useEffect(() => {
         axios
@@ -76,21 +124,43 @@ function App() {
             .catch(() => {});
     }
 
+    function handleDeleteCounter(id: string) {
+        if (!id) {
+            return;
+        }
+
+        axios
+            .delete(`/api/v1/counters/${id}`)
+            .then(() => setCounters((c) => c.filter((e) => e.id != id)))
+            .catch(() => {});
+    }
+
     return (
         <>
             <AddNewCounterDialog
-                isDialogOpen={isDialogOpen}
+                isDialogOpen={isAddDialogOpen}
                 onConfirm={(name) => {
                     handleCreateCounter(name);
-                    setIsDialogOpen(false);
+                    setIsAddDialogOpen(false);
                 }}
-                onClose={() => setIsDialogOpen(false)}
+                onClose={() => setIsAddDialogOpen(false)}
+            />
+            <DeleteCounterDialog
+                isDialogOpen={!isEmpty(currentCounter)}
+                counter={currentCounter}
+                onConfirm={() => {
+                    handleDeleteCounter(currentCounter?.id || "");
+                    setCurrentCounter(undefined);
+                }}
+                onClose={() => {
+                    setCurrentCounter(undefined);
+                }}
             />
             <Container maxWidth="lg">
                 <Grid container alignContent="center" justifyContent="center" style={{ minHeight: "100vh" }} gap={4}>
                     {counters.map((counter) => (
                         <Grid xs={5} key={counter.id}>
-                            <Counter id={counter.id} name={counter.name} />
+                            <Counter id={counter.id} name={counter.name} onDelete={() => setCurrentCounter(counter)} />
                         </Grid>
                     ))}
                 </Grid>
@@ -98,7 +168,7 @@ function App() {
             <Fab
                 style={{ position: "absolute", right: "3%", bottom: "5%" }}
                 color="primary"
-                onClick={() => setIsDialogOpen(true)}
+                onClick={() => setIsAddDialogOpen(true)}
             >
                 +
             </Fab>

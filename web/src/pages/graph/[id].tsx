@@ -3,12 +3,12 @@ import type { IData } from "../../lib/models";
 
 import { CircularProgress, Container, Unstable_Grid2 as Grid, Typography } from "@mui/material";
 import axios from "axios";
-import { Chart as ChartJs } from "chart.js";
+import { Chart as ChartJs, Colors } from "chart.js";
 import "chart.js/auto";
 import zoomPlugin from "chartjs-plugin-zoom";
 import { useEffect, useMemo, useState } from "react";
 import { Chart } from "react-chartjs-2";
-ChartJs.register(zoomPlugin);
+ChartJs.register(zoomPlugin, Colors);
 
 import ButtonGroupRadio from "../../components/ButtonGroupRadio";
 import IF from "../../components/IF";
@@ -16,6 +16,31 @@ import IF from "../../components/IF";
 import { dateRange, daysInMonth, roundDecimal } from "../../lib/helpers";
 
 import { Link, useParams } from "../../router";
+
+const COMMON_GRAPH_OPTIONS: ChartOptions<"bar" | "line"> = {
+    responsive: true,
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+        legend: { display: false },
+        title: { display: false },
+    },
+    scales: {
+        y: {
+            suggestedMin: 0,
+            beginAtZero: true,
+            ticks: {
+                precision: 1,
+                stepSize: 1,
+                color: "#FFFFFFD9",
+            },
+        },
+        x: {
+            ticks: {
+                color: "#FFFFFFD9",
+            },
+        },
+    },
+};
 
 const MONTH = ["GEN", "FEB", "MAR", "APR", "MAG", "GIU", "LUG", "AGO", "SET", "OTT", "NOV", "DIC"];
 function MonthGraph({ data }: { data: IData[] }) {
@@ -63,38 +88,21 @@ function MonthGraph({ data }: { data: IData[] }) {
                     label: "TOT",
                     type: "bar",
                     data: ds,
+                    order: 1,
                 },
                 {
                     label: "AVG",
                     type: "line",
-                    fill: false,
-                    borderColor: "rgb(54, 162, 235)",
                     borderWidth: 2,
                     tension: 0.4,
                     data: datasetsavg,
+                    order: 0,
                 },
             ],
         };
     }, [data]);
 
-    const OPTIONS: ChartOptions<"bar" | "line"> = {
-        responsive: true,
-        interaction: { mode: "index", intersect: false },
-        plugins: {
-            legend: { display: false },
-            title: { display: false },
-        },
-        scales: {
-            y: {
-                suggestedMin: 0,
-                beginAtZero: true,
-                ticks: {
-                    precision: 1,
-                    stepSize: 1,
-                },
-            },
-        },
-    };
+    const OPTIONS: ChartOptions<"bar" | "line"> = COMMON_GRAPH_OPTIONS;
 
     return <Chart type="bar" data={dataset} options={OPTIONS} />;
 }
@@ -116,37 +124,14 @@ function WeekGraph({ data }: { data: IData[] }) {
         };
     }, [data]);
 
-    const OPTIONS: ChartOptions<"bar"> = {
-        responsive: true,
-        interaction: { mode: "index", intersect: false },
-        plugins: {
-            legend: { display: false },
-            title: { display: false },
-        },
-        scales: {
-            y: {
-                suggestedMin: 0,
-                beginAtZero: true,
-                ticks: {
-                    precision: 1,
-                    stepSize: 1,
-                },
-            },
-        },
-    };
+    const OPTIONS: ChartOptions<"bar"> = COMMON_GRAPH_OPTIONS;
 
     return <Chart type="bar" data={dataset} options={OPTIONS} />;
 }
 
 function DayGraph({ data }: { data: IData[] }) {
     function getDateLabel(date: Date): string {
-        return (
-            String(date.getDate()).padStart(2, "0") +
-            "/" +
-            String(date.getMonth() + 1).padStart(2, "0") +
-            "/" +
-            date.getFullYear()
-        );
+        return `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
     }
 
     const dataset = useMemo<ChartData<"bar">>(() => {
@@ -155,6 +140,9 @@ function DayGraph({ data }: { data: IData[] }) {
         const ds = [];
 
         for (const singleData of data) {
+            const d = new Date(singleData.createdAt);
+            console.log(singleData.createdAt, d, d.getHours());
+
             const dateString = getDateLabel(new Date(singleData.createdAt));
             temp[dateString] = (temp?.[dateString] || 0) + singleData.number;
         }
@@ -173,8 +161,7 @@ function DayGraph({ data }: { data: IData[] }) {
     }, [data]);
 
     const OPTIONS: ChartOptions<"bar"> = {
-        responsive: true,
-        interaction: { mode: "index", intersect: false },
+        ...COMMON_GRAPH_OPTIONS,
         plugins: {
             legend: { display: false },
             title: { display: false },
@@ -189,17 +176,6 @@ function DayGraph({ data }: { data: IData[] }) {
                         enabled: true,
                     },
                     mode: "x",
-                },
-            },
-        },
-        scales: {
-            y: {
-                suggestedMin: 0,
-                // suggestedMax: Math.max(...datasets) + 1,
-                beginAtZero: true,
-                ticks: {
-                    precision: 1,
-                    stepSize: 1,
                 },
             },
         },
@@ -234,24 +210,7 @@ function HourGraph({ data }: { data: IData[] }) {
         };
     }, [data]);
 
-    const OPTIONS: ChartOptions<"bar"> = {
-        responsive: true,
-        interaction: { mode: "index", intersect: false },
-        plugins: {
-            legend: { display: false },
-            title: { display: false },
-        },
-        scales: {
-            y: {
-                suggestedMin: 0,
-                beginAtZero: true,
-                ticks: {
-                    precision: 1,
-                    stepSize: 1,
-                },
-            },
-        },
-    };
+    const OPTIONS: ChartOptions<"bar"> = COMMON_GRAPH_OPTIONS;
 
     return <Chart type="bar" data={dataset} options={OPTIONS} />;
 }
@@ -285,7 +244,7 @@ export default function Graph() {
             <Grid container style={{ marginBottom: "1.5rem" }}>
                 <Grid xs={3}>
                     <Typography variant="h1" sx={{ textAlign: "center", transform: "rotateZ(180deg)" }}>
-                        <Link to="/" className="no-link">
+                        <Link to="/" className="no-link" style={{ color: "#FFFFFFD9" }}>
                             &#10140;
                         </Link>
                     </Typography>

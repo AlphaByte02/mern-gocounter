@@ -1,6 +1,9 @@
 {
     "root": true,
-    "env": { "browser": true, "es2020": true },
+    "env": {
+        "browser": true,
+        "es2020": true
+    },
     "settings": {
         "react": {
             "version": "detect"
@@ -20,6 +23,6 @@
     "plugins": ["@typescript-eslint", "react", "react-refresh"],
     "rules": {
         "react-refresh/only-export-components": ["warn", { "allowConstantExport": true }],
-        "indent": "error"
+        "indent": ["error", { "SwitchCase": 1 }]
     }
 }

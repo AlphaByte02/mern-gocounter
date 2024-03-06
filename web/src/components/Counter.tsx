@@ -3,19 +3,25 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 
 import { Link } from "../router";
+import { roundDecimal } from "../lib/helpers";
 
 type AppProps = {
     id: string;
     name: string;
+    onDelete: (id: string) => void;
 };
 
-const Counter = ({ id, name }: AppProps) => {
+const Counter = ({ id, name, onDelete }: AppProps) => {
     const [count, setCount] = useState(0);
+    const [avg, setAvg] = useState(0);
 
     useEffect(() => {
         axios
-            .get(`/api/v1/counters/${id}/sum`)
-            .then(({ data }) => setCount(data.total))
+            .get(`/api/v1/counters/${id}/stats`)
+            .then(({ data }) => {
+                setCount(data.total);
+                setAvg(data.avg);
+            })
             .catch(() => {});
     }, [id]);
 
@@ -53,6 +59,9 @@ const Counter = ({ id, name }: AppProps) => {
                 <Grid xs={4}>
                     <Typography variant="h2" align="center">
                         {count}
+                        <Typography align="center" style={{ color: "gray" }}>
+                            (~{roundDecimal(avg, 2)}/d)
+                        </Typography>
                     </Typography>
                 </Grid>
                 <Grid xs={4} display="flex" justifyContent="center" alignItems="center">
@@ -70,7 +79,7 @@ const Counter = ({ id, name }: AppProps) => {
                 </Grid>
                 <Grid xs={12}>
                     <Typography align="center">
-                        <Button>Delete</Button>
+                        <Button onClick={() => onDelete(id)}>Delete</Button>
                     </Typography>
                 </Grid>
             </Grid>

@@ -57,6 +57,18 @@ func GetCounter(c *fiber.Ctx) error {
 	return c.JSON(counters)
 }
 
+func DeleteCounter(c *fiber.Ctx) error {
+	err := db.Q.DeleteCounter(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
 func GetCounterData(c *fiber.Ctx) error {
 	counters, err := db.Q.GetCounterData(c.Params("id"))
 	if err != nil {
@@ -79,6 +91,29 @@ func GetCounterSum(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(counters)
+}
+
+func GetCounterAvg(c *fiber.Ctx) error {
+	avg, err := db.Q.GetCounterAvg(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+
+	return c.JSON(avg)
+}
+func GetCounterStats(c *fiber.Ctx) error {
+	avg, err := db.Q.GetCounterStats(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+
+	return c.JSON(avg)
 }
 
 func GetCounterDataByMonth(c *fiber.Ctx) error {

@@ -1,3 +1,24 @@
+export function isEmpty(element: unknown) {
+    if ((element || null) === null) {
+        return true;
+    }
+
+    switch (typeof element) {
+        case "object": {
+            if (Array.isArray(element)) {
+                return element.length === 0;
+            } else {
+                for (const _ in element) {
+                    return false;
+                }
+                return true;
+            }
+        }
+        default:
+            return false;
+    }
+}
+
 export function daysInMonth(month: number, year: number): number {
     const now = new Date();
     if (!year) {

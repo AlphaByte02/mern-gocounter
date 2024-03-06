@@ -1,3 +1,8 @@
+body {
+    background-color: #f5f5f5ff;
+    margin: 0;
+}
+
 .no-link {
     text-decoration: none;
     color: black;
