@@ -19,10 +19,10 @@
         "prettier"
     ],
     "parser": "@typescript-eslint/parser",
-    "ignorePatterns": ["dist", ".eslintrc.cjs"],
+    "ignorePatterns": ["dist", ".eslintrc.json", ".prettier.json", "src/router.ts"],
     "plugins": ["@typescript-eslint", "react", "react-refresh"],
     "rules": {
         "react-refresh/only-export-components": ["warn", { "allowConstantExport": true }],
-        "indent": ["error", { "SwitchCase": 1 }]
+        "indent": ["error", 4, { "SwitchCase": 1 }]
     }
 }

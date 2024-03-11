@@ -1,9 +1,10 @@
 import { Button, Unstable_Grid2 as Grid, Paper, Typography } from "@mui/material";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+import { roundDecimal } from "../lib/helpers";
 
 import { Link } from "../router";
-import { roundDecimal } from "../lib/helpers";
 
 type AppProps = {
     id: string;
@@ -15,7 +16,7 @@ const Counter = ({ id, name, onDelete }: AppProps) => {
     const [count, setCount] = useState(0);
     const [avg, setAvg] = useState(0);
 
-    useEffect(() => {
+    const setStats = useCallback(() => {
         axios
             .get(`/api/v1/counters/${id}/stats`)
             .then(({ data }) => {
@@ -25,13 +26,17 @@ const Counter = ({ id, name, onDelete }: AppProps) => {
             .catch(() => {});
     }, [id]);
 
+    useEffect(() => {
+        setStats();
+    }, [setStats]);
+
     function submit(value: number) {
         axios
             .post("/api/v1/datas", {
                 number: value,
                 counterRef: id,
             })
-            .then(() => setCount((c) => c + value))
+            .then(() => setStats())
             .catch(() => {});
     }
 
