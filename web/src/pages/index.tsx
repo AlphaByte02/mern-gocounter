@@ -120,7 +120,7 @@ function App() {
     function handleCreateCounter(name: string) {
         axios
             .post("/api/v1/counters", { name: name })
-            .then(({ data }) => setCounters((c) => [...c, data]))
+            .then(({ data }: { data: ICounter }) => setCounters((c) => [...c, data]))
             .catch(() => {});
     }
 
@@ -157,9 +157,15 @@ function App() {
                 }}
             />
             <Container maxWidth="lg">
-                <Grid container alignContent="center" justifyContent="center" style={{ minHeight: "100vh" }} gap={4}>
+                <Grid
+                    container
+                    alignContent="center"
+                    justifyContent="center"
+                    style={{ minHeight: "100vh", margin: "1rem auto" }}
+                    gap={4}
+                >
                     {counters.map((counter) => (
-                        <Grid xs={5} key={counter.id}>
+                        <Grid xs={10} md={5} key={counter.id}>
                             <Counter id={counter.id} name={counter.name} onDelete={() => setCurrentCounter(counter)} />
                         </Grid>
                     ))}

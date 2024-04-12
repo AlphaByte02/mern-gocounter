@@ -1,8 +1,8 @@
 import { Modals } from "@generouted/react-router";
-import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
+import { CssBaseline, ThemeProvider, createTheme, responsiveFontSizes } from "@mui/material";
 import { Outlet } from "react-router-dom";
 
-const darkTheme = createTheme({
+let darkTheme = createTheme({
     palette: {
         mode: "dark",
         text: {
@@ -11,6 +11,7 @@ const darkTheme = createTheme({
         },
     },
 });
+darkTheme = responsiveFontSizes(darkTheme, { factor: 4 });
 
 export default function App() {
     return (
