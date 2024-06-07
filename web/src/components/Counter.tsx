@@ -2,17 +2,17 @@ import { Button, Unstable_Grid2 as Grid, Paper, Typography } from "@mui/material
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 
-import { roundDecimal } from "../lib/helpers";
-
 import { Link } from "../router";
+
+import { roundDecimal } from "../lib/helpers";
 
 type AppProps = {
     id: string;
     name: string;
-    onDelete: (id: string) => void;
+    onEdit: (id: string) => void;
 };
 
-const Counter = ({ id, name, onDelete }: AppProps) => {
+const Counter = ({ id, name, onEdit }: AppProps) => {
     const [count, setCount] = useState(0);
     const [avg, setAvg] = useState(0);
 
@@ -50,29 +50,38 @@ const Counter = ({ id, name, onDelete }: AppProps) => {
     return (
         <Paper elevation={3} style={{ padding: "0.5em 1em" }}>
             <Grid container>
-                <Grid xs={12}>
-                    <Typography variant="h4" align="center">
-                        {name}
-                    </Typography>
+                <Grid xs={12} container>
+                    <Grid xs={8} xsOffset={2}>
+                        <Typography variant="h4" align="center">
+                            {name}
+                        </Typography>
+                    </Grid>
+                    <Grid xs={2} style={{ textAlign: "right" }}>
+                        <Button sx={{ color: "#FFFFFFD9" }} color="secondary" onClick={() => onEdit(id)}>
+                            ⋮
+                        </Button>
+                    </Grid>
                 </Grid>
 
-                <Grid xs={4} display="flex" justifyContent="center" alignItems="center">
-                    <Button onClick={onSub} size="large" color="inherit" sx={{ fontSize: "1.5rem" }}>
-                        -1
-                    </Button>
-                </Grid>
-                <Grid xs={4}>
-                    <Typography variant="h2" align="center">
-                        {count}
-                        <Typography align="center" style={{ color: "gray" }}>
-                            (~{roundDecimal(avg, 2)}/d)
+                <Grid xs={12} container sx={{ marginBottom: ".5rem" }}>
+                    <Grid xs={4} display="flex" justifyContent="center" alignItems="center">
+                        <Button onClick={onSub} size="large" color="inherit" sx={{ fontSize: "1.5rem" }}>
+                            -1
+                        </Button>
+                    </Grid>
+                    <Grid xs={4}>
+                        <Typography variant="h2" align="center">
+                            {count}
+                            <Typography align="center" style={{ color: "gray" }}>
+                                (~{roundDecimal(avg, 2)}/d)
+                            </Typography>
                         </Typography>
-                    </Typography>
-                </Grid>
-                <Grid xs={4} display="flex" justifyContent="center" alignItems="center">
-                    <Button onClick={onAdd} size="large" color="inherit" sx={{ fontSize: "1.5rem" }}>
-                        +1
-                    </Button>
+                    </Grid>
+                    <Grid xs={4} display="flex" justifyContent="center" alignItems="center">
+                        <Button onClick={onAdd} size="large" color="inherit" sx={{ fontSize: "1.5rem" }}>
+                            +1
+                        </Button>
+                    </Grid>
                 </Grid>
 
                 <Grid xs={12}>
@@ -80,11 +89,6 @@ const Counter = ({ id, name, onDelete }: AppProps) => {
                         <Link to="/graph/:id" params={{ id: id.toString() }}>
                             <Button>Grafico</Button>
                         </Link>
-                    </Typography>
-                </Grid>
-                <Grid xs={12}>
-                    <Typography align="center">
-                        <Button onClick={() => onDelete(id)}>Delete</Button>
                     </Typography>
                 </Grid>
             </Grid>

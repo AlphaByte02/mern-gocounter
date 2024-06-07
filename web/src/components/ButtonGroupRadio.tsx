@@ -4,7 +4,7 @@ import { Button, ButtonGroup } from "@mui/material";
 import { useState } from "react";
 
 type ButtonGroupRadioProps = {
-    buttons: { label: string; callback: () => void }[];
+    buttons: { label: string; callback?: () => void }[];
     defaultSelected: number;
     style?: CSSProperties;
     className?: string;

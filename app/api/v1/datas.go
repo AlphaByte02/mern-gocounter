@@ -3,6 +3,9 @@ package v1
 import (
 	"main/app/models"
 	"main/app/pkg/db"
+	"main/app/queries"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -35,13 +38,30 @@ func CreateData(c *fiber.Ctx) error {
 }
 
 func GetDatas(c *fiber.Ctx) error {
-	datas, err := db.Q.GetDatas()
+	order := strings.Trim(c.Query("o", ""), " ")
+	limit, _ := strconv.ParseInt(strings.Trim(c.Query("limit", "0"), " -"), 10, 64)
+
+	datas, err := db.Q.GetDatas(queries.ListOptions{Ordering: order, Limit: limit})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": true,
 			"msg":   err.Error(),
 		})
 	}
+
+	/*
+		config := pagination.Config{
+		       PageSize: 10,
+		       PageType: pagination.SimplePage{},
+		       Datatype: pagination.Array{},
+		       Framework: pagination.Fiber{
+		           Context: c,
+		       },
+		   }
+
+		// Paginate items
+		paginatedItems := pagination.Paginate(items, config)
+	*/
 
 	return c.JSON(datas)
 }

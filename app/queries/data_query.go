@@ -4,15 +4,22 @@ import (
 	"context"
 	"main/app/models"
 	"math"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type DataQueries struct {
 	Collection *mongo.Collection
+}
+
+type ListOptions struct {
+	Limit    int64
+	Ordering string
 }
 
 func (q *DataQueries) CreateData(newdata models.Data) (models.Data, error) {
@@ -32,10 +39,23 @@ func (q *DataQueries) CreateData(newdata models.Data) (models.Data, error) {
 	return data, nil
 }
 
-func (q *DataQueries) GetDatas() ([]models.Data, error) {
+func (q *DataQueries) GetDatas(opts ListOptions) ([]models.Data, error) {
 	var data []models.Data
 
-	cursor, err := q.Collection.Find(context.TODO(), bson.D{{}})
+	qopts := options.Find()
+	if opts.Ordering != "" {
+		if strings.HasPrefix(opts.Ordering, "-") {
+			key, _ := strings.CutPrefix(opts.Ordering, "-")
+			qopts = qopts.SetSort(bson.D{{Key: key, Value: -1}})
+		} else {
+			qopts = qopts.SetSort(bson.D{{Key: opts.Ordering, Value: 1}})
+		}
+	}
+	if opts.Limit != 0 {
+		qopts = qopts.SetLimit(opts.Limit)
+	}
+
+	cursor, err := q.Collection.Find(context.TODO(), bson.D{{}}, qopts)
 	if err != nil {
 		return data, err
 	}

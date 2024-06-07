@@ -15,9 +15,10 @@ import {
 import axios from "axios";
 import { useEffect, useState } from "react";
 
-import Counter from "../components/Counter";
+import { useNavigate } from "../router";
 
-import { isEmpty } from "../lib/helpers";
+import Counter from "../components/Counter";
+import CounterDrawer from "../components/CounterDrawer";
 
 const AddNewCounterDialog = ({
     isDialogOpen,
@@ -104,9 +105,13 @@ const DeleteCounterDialog = ({
 };
 
 function App() {
+    const navigate = useNavigate();
+
     const [counters, setCounters] = useState<ICounter[]>([]);
 
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
+    const [isDeleteModelOpen, setIsDeleteModelOpen] = useState(false);
 
     const [currentCounter, setCurrentCounter] = useState<ICounter>();
 
@@ -135,6 +140,15 @@ function App() {
             .catch(() => {});
     }
 
+    function handleEditCounter(id: string) {
+        if (!id) {
+            return;
+        }
+
+        setIsEditDrawerOpen(true);
+        setCurrentCounter(counters.find((e) => e.id === id));
+    }
+
     return (
         <>
             <AddNewCounterDialog
@@ -146,13 +160,31 @@ function App() {
                 onClose={() => setIsAddDialogOpen(false)}
             />
             <DeleteCounterDialog
-                isDialogOpen={!isEmpty(currentCounter)}
+                isDialogOpen={isDeleteModelOpen}
                 counter={currentCounter}
                 onConfirm={() => {
                     handleDeleteCounter(currentCounter?.id || "");
+                    setIsDeleteModelOpen(false);
                     setCurrentCounter(undefined);
                 }}
                 onClose={() => {
+                    setIsDeleteModelOpen(false);
+                    setCurrentCounter(undefined);
+                }}
+            />
+            <CounterDrawer
+                open={isEditDrawerOpen}
+                counter={currentCounter}
+                onClose={() => {
+                    setIsEditDrawerOpen(false);
+                    setCurrentCounter(undefined);
+                }}
+                onDelete={() => {
+                    setIsEditDrawerOpen(false);
+                    setIsDeleteModelOpen(true);
+                }}
+                onSubmit={() => {
+                    setIsEditDrawerOpen(false);
                     setCurrentCounter(undefined);
                 }}
             />
@@ -161,12 +193,12 @@ function App() {
                     container
                     alignContent="center"
                     justifyContent="center"
-                    style={{ minHeight: "100vh", margin: "1rem auto" }}
+                    style={{ minHeight: "100vh", padding: "1rem auto" }}
                     gap={4}
                 >
                     {counters.map((counter) => (
                         <Grid xs={10} md={5} key={counter.id}>
-                            <Counter id={counter.id} name={counter.name} onDelete={() => setCurrentCounter(counter)} />
+                            <Counter id={counter.id} name={counter.name} onEdit={handleEditCounter} />
                         </Grid>
                     ))}
                 </Grid>
@@ -177,6 +209,13 @@ function App() {
                 onClick={() => setIsAddDialogOpen(true)}
             >
                 +
+            </Fab>
+            <Fab
+                style={{ position: "absolute", right: "3%", bottom: "12%" }}
+                color="secondary"
+                onClick={() => navigate("/feed")}
+            >
+                ☰
             </Fab>
         </>
     );
