@@ -67,27 +67,14 @@ func (q *CounterQueries) DeleteCounter(counterID string) error {
 		return err
 	}
 
-	session, err := q.Collection.Database().Client().StartSession()
+	filters := bson.D{{Key: "counter_ref", Value: id}}
+	_, err = q.Collection.Database().Collection("datas").DeleteMany(context.TODO(), filters)
 	if err != nil {
 		return err
 	}
-	defer session.EndSession(context.TODO())
 
-	_, err = session.WithTransaction(context.TODO(), func(ctx mongo.SessionContext) (interface{}, error) {
-		filters := bson.D{{Key: "counter_ref", Value: id}}
-		_, err := q.Collection.Database().Collection("datas").DeleteMany(ctx, filters)
-		if err != nil {
-			return nil, err
-		}
-
-		filters = bson.D{{Key: "_id", Value: id}}
-		_, err = q.Collection.DeleteOne(ctx, filters)
-		if err != nil {
-			return nil, err
-		}
-
-		return nil, nil
-	})
+	filters = bson.D{{Key: "_id", Value: id}}
+	_, err = q.Collection.DeleteOne(context.TODO(), filters)
 	if err != nil {
 		return err
 	}
