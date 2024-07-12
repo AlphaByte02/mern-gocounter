@@ -204,14 +204,14 @@ function App() {
                 </Grid>
             </Container>
             <Fab
-                style={{ position: "fixed", right: "3%", bottom: "5%" }}
+                style={{ position: "fixed", right: "3%", bottom: "40px" }}
                 color="primary"
                 onClick={() => setIsAddDialogOpen(true)}
             >
                 +
             </Fab>
             <Fab
-                style={{ position: "fixed", right: "3%", bottom: "12%" }}
+                style={{ position: "fixed", right: "3%", bottom: "105px" }}
                 color="secondary"
                 onClick={() => navigate("/feed")}
             >

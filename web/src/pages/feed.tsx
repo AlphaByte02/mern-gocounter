@@ -130,7 +130,7 @@ function Feed() {
                 </Grid>
             </Container>
             <Fab
-                style={{ position: "fixed", right: "3%", bottom: "5%", transform: "rotateZ(180deg)" }}
+                style={{ position: "fixed", right: "3%", bottom: "40px", transform: "rotateZ(180deg)" }}
                 color="secondary"
                 onClick={() => navigate("/")}
             >

@@ -31,7 +31,7 @@ export function daysInMonth(month: number, year: number): number {
     return new Date(year, month + 1, 0).getDate();
 }
 
-export function roundDecimal(num: number, n: number): number {
+export function roundDecimal(num: number, n: number = 1): number {
     return Math.round(num * 10 ** n) / 10 ** n;
 }
 
@@ -67,4 +67,29 @@ export function dateRange(startDate: Date | string, endDate: Date | string, step
     }
 
     return dateArray;
+}
+
+function gcd(a: number, b: number): number {
+    // Base case: if b is 0, then the GCD is a
+    if (b === 0) return a;
+    // Recursive case: compute the GCD of b and the remainder of a divided by b
+    else return gcd(b, a % b);
+}
+
+export function humanizeAvg(avg: number) {
+    const maxDenominator = 1000;
+
+    let numerator = avg;
+    let denominator = 1;
+
+    while (numerator % 1 !== 0 && denominator <= maxDenominator) {
+        numerator *= 10;
+        denominator *= 10;
+    }
+
+    const commonDivisor = gcd(roundDecimal(numerator), denominator);
+    numerator = roundDecimal(numerator) / commonDivisor;
+    denominator = denominator / commonDivisor;
+
+    return `${numerator} every ${denominator} days`;
 }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Link } from "../router";
 
-import { roundDecimal } from "../lib/helpers";
+import { humanizeAvg, roundDecimal } from "../lib/helpers";
 
 type AppProps = {
     id: string;
@@ -14,7 +14,19 @@ type AppProps = {
 
 const Counter = ({ id, name, onEdit }: AppProps) => {
     const [count, setCount] = useState(0);
-    const [avg, setAvg] = useState(0);
+
+    const [currentAvgDisplay, setCurrentAvgDisplay] = useState<"numeric" | "human">("numeric");
+    const [avg, setAvg] = useState(0.4806421152030217);
+
+    const getAvg = useCallback((avg: number, t: "numeric" | "human" = "numeric") => {
+        if (t === "numeric") {
+            return `~${roundDecimal(avg, 2)}/d`;
+        } else if (t === "human") {
+            return `~${humanizeAvg(roundDecimal(avg, 2))}`;
+        } else {
+            throw new Error();
+        }
+    }, []);
 
     const setStats = useCallback(() => {
         axios
@@ -47,6 +59,14 @@ const Counter = ({ id, name, onEdit }: AppProps) => {
         submit(1);
     }
 
+    function changeAvgDisplay() {
+        if (currentAvgDisplay == "numeric") {
+            setCurrentAvgDisplay("human");
+        } else {
+            setCurrentAvgDisplay("numeric");
+        }
+    }
+
     return (
         <Paper elevation={3} style={{ padding: "0.5em 1em" }}>
             <Grid container>
@@ -64,20 +84,28 @@ const Counter = ({ id, name, onEdit }: AppProps) => {
                 </Grid>
 
                 <Grid xs={12} container sx={{ marginBottom: ".5rem" }}>
-                    <Grid xs={4} display="flex" justifyContent="center" alignItems="center">
+                    <Grid xs={3} display="flex" justifyContent="center" alignItems="center">
                         <Button onClick={onSub} size="large" color="inherit" sx={{ fontSize: "1.5rem" }}>
                             -1
                         </Button>
                     </Grid>
-                    <Grid xs={4}>
+                    <Grid xs={6}>
                         <Typography variant="h2" align="center">
                             {count}
-                            <Typography align="center" style={{ color: "gray" }}>
-                                (~{roundDecimal(avg, 2)}/d)
-                            </Typography>
+                            {avg && (
+                                <Typography align="center" style={{ color: "gray" }}>
+                                    ({getAvg(avg, currentAvgDisplay)}){" "}
+                                    <Typography
+                                        sx={{ cursor: "pointer", display: "inline-block" }}
+                                        onClick={() => changeAvgDisplay()}
+                                    >
+                                        ⇆
+                                    </Typography>
+                                </Typography>
+                            )}
                         </Typography>
                     </Grid>
-                    <Grid xs={4} display="flex" justifyContent="center" alignItems="center">
+                    <Grid xs={3} display="flex" justifyContent="center" alignItems="center">
                         <Button onClick={onAdd} size="large" color="inherit" sx={{ fontSize: "1.5rem" }}>
                             +1
                         </Button>
