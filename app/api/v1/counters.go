@@ -3,6 +3,8 @@ package v1
 import (
 	"main/app/models"
 	"main/app/pkg/db"
+	"main/app/pkg/utils"
+	"main/app/queries"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -46,7 +48,7 @@ func GetCounters(c *fiber.Ctx) error {
 }
 
 func GetCounter(c *fiber.Ctx) error {
-	counters, err := db.Q.GetCounter(c.Params("id"))
+	counter, err := db.Q.GetCounter(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": true,
@@ -54,7 +56,42 @@ func GetCounter(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(counters)
+	return c.JSON(counter)
+}
+
+func EditCounter(c *fiber.Ctx) error {
+	counter, err := db.Q.GetCounter(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+
+	var updatedData map[string]interface{}
+	if err := c.BodyParser(&updatedData); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Cannot parse JSON",
+		})
+	}
+
+	if softReset, ok := updatedData["softReset"]; softReset == nil && ok {
+		counter.SoftReset = nil
+	} else if softReset, ok := updatedData["softReset"].(string); ok && softReset != "" {
+		if newSoftReset, ok := time.Parse(time.RFC3339, softReset); ok == nil {
+			newDateTime := primitive.NewDateTimeFromTime(newSoftReset)
+			counter.SoftReset = &newDateTime
+		}
+	}
+	if name, ok := updatedData["name"].(string); ok && name != "" {
+		counter.Name = name
+	}
+
+	if ok, err := db.Q.EditCounter(counter); !ok || err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(err)
+	}
+
+	return c.JSON(counter)
 }
 
 func DeleteCounter(c *fiber.Ctx) error {
@@ -70,7 +107,7 @@ func DeleteCounter(c *fiber.Ctx) error {
 }
 
 func GetCounterData(c *fiber.Ctx) error {
-	counters, err := db.Q.GetCounterData(c.Params("id"))
+	counter, err := db.Q.GetCounter(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": true,
@@ -78,11 +115,33 @@ func GetCounterData(c *fiber.Ctx) error {
 		})
 	}
 
+	global := utils.StringToBool(c.Query("global", ""))
+	counters, err := db.Q.GetCounterData(counter, queries.CounterOptions{Global: global})
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+
+	if len(counters) == 0 {
+		return c.JSON([]interface{}{})
+	}
+
 	return c.JSON(counters)
 }
 
 func GetCounterSum(c *fiber.Ctx) error {
-	counters, err := db.Q.GetCounterSum(c.Params("id"))
+	counter, err := db.Q.GetCounter(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+
+	global := utils.StringToBool(c.Query("global", ""))
+	counters, err := db.Q.GetCounterSum(counter, queries.CounterOptions{Global: global})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": true,
@@ -94,7 +153,16 @@ func GetCounterSum(c *fiber.Ctx) error {
 }
 
 func GetCounterAvg(c *fiber.Ctx) error {
-	avg, err := db.Q.GetCounterAvg(c.Params("id"))
+	counter, err := db.Q.GetCounter(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+
+	global := utils.StringToBool(c.Query("global", ""))
+	avg, err := db.Q.GetCounterAvg(counter, queries.CounterOptions{Global: global})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": true,
@@ -105,7 +173,16 @@ func GetCounterAvg(c *fiber.Ctx) error {
 	return c.JSON(avg)
 }
 func GetCounterStats(c *fiber.Ctx) error {
-	avg, err := db.Q.GetCounterStats(c.Params("id"))
+	counter, err := db.Q.GetCounter(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+
+	global := utils.StringToBool(c.Query("global", ""))
+	avg, err := db.Q.GetCounterStats(counter, queries.CounterOptions{Global: global})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": true,
@@ -117,7 +194,16 @@ func GetCounterStats(c *fiber.Ctx) error {
 }
 
 func GetCounterDataByMonth(c *fiber.Ctx) error {
-	counters, err := db.Q.GetCounterDataByMonth(c.Params("id"))
+	counter, err := db.Q.GetCounter(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+
+	global := utils.StringToBool(c.Query("global", ""))
+	counters, err := db.Q.GetCounterDataByMonth(counter, queries.CounterOptions{Global: global})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": true,

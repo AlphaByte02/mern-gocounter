@@ -61,6 +61,20 @@ func (q *CounterQueries) GetCounter(counterID string) (models.Counter, error) {
 	return counter, nil
 }
 
+func (q *CounterQueries) EditCounter(counter models.Counter) (bool, error) {
+	update := bson.M{"$set": bson.M{"name": counter.Name, "softReset": counter.SoftReset}}
+	res, err := q.Collection.UpdateByID(context.TODO(), counter.ID, update)
+	if err != nil {
+		return false, err
+	}
+
+	if res.ModifiedCount != 1 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (q *CounterQueries) DeleteCounter(counterID string) error {
 	id, err := primitive.ObjectIDFromHex(counterID)
 	if err != nil {

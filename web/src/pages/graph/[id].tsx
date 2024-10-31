@@ -1,5 +1,5 @@
 import type { ChartData, ChartOptions } from "chart.js";
-import type { IData } from "../../lib/models";
+import type { IData } from "@lib/models";
 
 import { CircularProgress, Container, Unstable_Grid2 as Grid, Typography } from "@mui/material";
 import axios from "axios";
@@ -8,14 +8,15 @@ import "chart.js/auto";
 import zoomPlugin from "chartjs-plugin-zoom";
 import { useEffect, useMemo, useState } from "react";
 import { Chart } from "react-chartjs-2";
+import useLocalStorage from "use-local-storage";
 ChartJs.register(zoomPlugin, Colors);
 
-import ButtonGroupRadio from "../../components/ButtonGroupRadio";
-import IF from "../../components/IF";
+import ButtonGroupRadio from "@components/ButtonGroupRadio";
+import IF from "@components/IF";
 
-import { dateRange, daysInMonth, roundDecimal } from "../../lib/helpers";
+import { dateRange, daysInMonth, roundDecimal } from "@lib/helpers";
 
-import { Link, useParams } from "../../router";
+import { Link, useParams } from "@/router";
 
 const COMMON_GRAPH_OPTIONS: ChartOptions<"bar" | "line"> = {
     responsive: true,
@@ -218,6 +219,8 @@ function HourGraph({ data }: { data: IData[] }) {
 export default function Graph() {
     const { id } = useParams("/graph/:id");
 
+    const [useGlobal] = useLocalStorage<boolean>("useGlobal", false);
+
     const ViewEnum = {
         MONTH: 1,
         WEEK: 2,
@@ -231,13 +234,13 @@ export default function Graph() {
 
     useEffect(() => {
         axios
-            .get(`/api/v1/counters/${id}/data`)
+            .get(`/api/v1/counters/${id}/data`, { params: { global: useGlobal } })
             .then(({ data }) => {
                 setDataset(data);
                 setIsLoading(false);
             })
             .catch(() => {});
-    }, [id]);
+    }, [id, useGlobal]);
 
     return (
         <Container maxWidth="lg">
@@ -256,6 +259,7 @@ export default function Graph() {
                 </Grid>
                 <Grid xs={3} sx={{ alignSelf: "center" }}>
                     <ButtonGroupRadio
+                        disabled={isLoading || dataset?.length === 0}
                         buttons={[
                             { label: "Month", callback: () => setCurrentView(ViewEnum.MONTH) },
                             { label: "Week Day", callback: () => setCurrentView(ViewEnum.WEEK) },
@@ -269,16 +273,26 @@ export default function Graph() {
 
             <Grid container alignContent="center" justifyContent="center" style={{ minHeight: "70vh" }}>
                 <Grid xs={12}>
-                    <IF condition={!isLoading && currentView === ViewEnum.MONTH}>
+                    <IF condition={!isLoading && dataset.length === 0}>
+                        <div style={{ textAlign: "center" }}>
+                            <Typography
+                                variant="h3"
+                                sx={{ textAlign: "center", display: "inline-block", verticalAlign: "super" }}
+                            >
+                                No Data
+                            </Typography>
+                        </div>
+                    </IF>
+                    <IF condition={!isLoading && dataset.length > 0 && currentView === ViewEnum.MONTH}>
                         <MonthGraph data={dataset} />
                     </IF>
-                    <IF condition={!isLoading && currentView === ViewEnum.WEEK}>
+                    <IF condition={!isLoading && dataset.length > 0 && currentView === ViewEnum.WEEK}>
                         <WeekGraph data={dataset} />
                     </IF>
-                    <IF condition={!isLoading && currentView === ViewEnum.DAY}>
+                    <IF condition={!isLoading && dataset.length > 0 && currentView === ViewEnum.DAY}>
                         <DayGraph data={dataset} />
                     </IF>
-                    <IF condition={!isLoading && currentView === ViewEnum.HOUR}>
+                    <IF condition={!isLoading && dataset.length > 0 && currentView === ViewEnum.HOUR}>
                         <HourGraph data={dataset} />
                     </IF>
                     <IF condition={isLoading}>

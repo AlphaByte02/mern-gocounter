@@ -1,25 +1,97 @@
-import type { ICounter } from "../lib/models";
+import type { ICounter } from "@lib/models";
 
 import { Box, Button, Drawer, Stack, Typography } from "@mui/material";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import axios from "axios";
+import { useCallback, useEffect, useState } from "react";
 
-type AppProps = {
+import EditableTypography from "@components/EditableTypography";
+
+export type CounterDrawerValues = {
+    id: string;
+    name: string;
+};
+
+type CounterDrawerProps = {
     open: boolean;
     counter?: ICounter;
     onClose: () => void;
     onDelete: () => void;
-    onSubmit: () => void;
+    onSubmit: (values: CounterDrawerValues) => void;
 };
 
-const CounterDrawer = ({ open, counter, onClose, onSubmit, onDelete }: AppProps) => {
+const CounterDrawer = ({ open, counter: initCounter, onClose, onSubmit, onDelete }: CounterDrawerProps) => {
     const matches = useMediaQuery("(max-width:768px)");
+
+    const [counter, setCounter] = useState(initCounter);
+
+    const [counterName, setCounterName] = useState(initCounter?.name || "");
+
+    useEffect(() => {
+        setCounter(initCounter);
+        setCounterName(initCounter?.name || "");
+    }, [initCounter]);
+
+    const resetSoftReset = useCallback(() => {
+        if (!counter) {
+            return;
+        }
+
+        axios
+            .patch<ICounter>(`/api/v1/counters/${counter.id}`, { softReset: new Date() })
+            .then(({ data }) => {
+                setCounter(data);
+            })
+            .catch((e) => console.error(e));
+    }, [counter]);
+
+    const removeSoftReset = useCallback(() => {
+        if (!counter) {
+            return;
+        }
+
+        axios
+            .patch<ICounter>(`/api/v1/counters/${counter.id}`, { softReset: null })
+            .then(({ data }) => {
+                setCounter(data);
+            })
+            .catch((e) => console.error(e));
+    }, [counter]);
+
+    function handleSubmit() {
+        if (!counter) {
+            return;
+        }
+
+        onSubmit?.({ id: counter?.id, name: counterName });
+    }
 
     return (
         <Drawer open={open} anchor="right" onClose={onClose}>
             <Box width={matches ? "90vw" : "30vw"} height="90vh" px={4} pt={4}>
-                <Typography variant="h3" align="center">
-                    {counter?.name}
-                </Typography>
+                <EditableTypography
+                    initialValue={counter?.name}
+                    onChange={(v) => setCounterName(v)}
+                    variant="h3"
+                    align="center"
+                />
+                <Stack height="100%" pt={8} justifyContent="start" alignItems="center">
+                    <Stack direction="row" width="100%" justifyContent="center" alignItems="center" spacing={2}>
+                        {counter?.softReset && (
+                            <Typography component="span" align="center">
+                                {new Date(counter.softReset).toLocaleString("it")}
+                            </Typography>
+                        )}
+                        <Button variant="outlined" color="warning" onClick={() => resetSoftReset()}>
+                            {counter?.softReset ? "↺" : "+"}
+                        </Button>
+                        {counter?.softReset && (
+                            <Button variant="outlined" color="secondary" onClick={() => removeSoftReset()}>
+                                🗑️
+                            </Button>
+                        )}
+                    </Stack>
+                </Stack>
             </Box>
             <Box px={6}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -31,7 +103,12 @@ const CounterDrawer = ({ open, counter, onClose, onSubmit, onDelete }: AppProps)
                             <Button variant="outlined" disabled color="warning">
                                 Reset
                             </Button>
-                            <Button variant="outlined" disabled color="primary" onClick={onSubmit}>
+                            <Button
+                                variant="outlined"
+                                color="primary"
+                                disabled={counterName === counter?.name}
+                                onClick={handleSubmit}
+                            >
                                 Save
                             </Button>
                         </Stack>

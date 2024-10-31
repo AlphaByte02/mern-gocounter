@@ -77,6 +77,10 @@ function gcd(a: number, b: number): number {
 }
 
 export function humanizeAvg(avg: number) {
+    if (avg === 0) {
+        return `0 every days`;
+    }
+
     const maxDenominator = 1000;
 
     let numerator = avg;

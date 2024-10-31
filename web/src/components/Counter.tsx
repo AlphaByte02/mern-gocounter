@@ -1,42 +1,56 @@
-import { Button, Unstable_Grid2 as Grid, Paper, Typography } from "@mui/material";
+import type { AvgDisplayType } from "@lib/models";
+
+import { Box, Button, CircularProgress, Unstable_Grid2 as Grid, Paper, Typography } from "@mui/material";
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 
-import { Link } from "../router";
+import { humanizeAvg, roundDecimal } from "@lib/helpers";
 
-import { humanizeAvg, roundDecimal } from "../lib/helpers";
+import IF from "@components/IF";
 
-type AppProps = {
+import { Link } from "@/router";
+
+type CounterProps = {
     id: string;
     name: string;
+    avgDisplay: AvgDisplayType;
+    global?: boolean;
     onEdit: (id: string) => void;
 };
 
-const Counter = ({ id, name, onEdit }: AppProps) => {
+const Counter = ({ id, name, avgDisplay = "numeric", global = false, onEdit }: CounterProps) => {
+    const [isLoading, setIsLoading] = useState(true);
+
     const [count, setCount] = useState(0);
 
-    const [currentAvgDisplay, setCurrentAvgDisplay] = useState<"numeric" | "human">("numeric");
-    const [avg, setAvg] = useState(0.4806421152030217);
+    const [avg, setAvg] = useState(0);
 
-    const getAvg = useCallback((avg: number, t: "numeric" | "human" = "numeric") => {
-        if (t === "numeric") {
-            return `~${roundDecimal(avg, 2)}/d`;
-        } else if (t === "human") {
-            return `~${humanizeAvg(roundDecimal(avg, 2))}`;
-        } else {
-            throw new Error();
-        }
-    }, []);
+    const getAvg = useCallback(
+        (avg: number) => {
+            if (avgDisplay === "numeric") {
+                return `~${roundDecimal(avg, 2)}/d`;
+            } else if (avgDisplay === "human") {
+                return `~${humanizeAvg(roundDecimal(avg, 3))}`;
+            } else {
+                throw new Error();
+            }
+        },
+        [avgDisplay]
+    );
 
     const setStats = useCallback(() => {
+        setIsLoading(true);
         axios
-            .get(`/api/v1/counters/${id}/stats`)
+            .get(`/api/v1/counters/${id}/stats`, { params: { global: global } })
             .then(({ data }) => {
                 setCount(data.total);
                 setAvg(data.avg);
             })
-            .catch(() => {});
-    }, [id]);
+            .catch(() => {})
+            .finally(() => {
+                setIsLoading(false);
+            });
+    }, [global, id]);
 
     useEffect(() => {
         setStats();
@@ -57,14 +71,6 @@ const Counter = ({ id, name, onEdit }: AppProps) => {
     }
     function onAdd() {
         submit(1);
-    }
-
-    function changeAvgDisplay() {
-        if (currentAvgDisplay == "numeric") {
-            setCurrentAvgDisplay("human");
-        } else {
-            setCurrentAvgDisplay("numeric");
-        }
     }
 
     return (
@@ -90,20 +96,21 @@ const Counter = ({ id, name, onEdit }: AppProps) => {
                         </Button>
                     </Grid>
                     <Grid xs={6}>
-                        <Typography variant="h2" align="center">
-                            {count}
-                            {avg && (
-                                <Typography align="center" style={{ color: "gray" }}>
-                                    ({getAvg(avg, currentAvgDisplay)}){" "}
-                                    <Typography
-                                        sx={{ cursor: "pointer", display: "inline-block" }}
-                                        onClick={() => changeAvgDisplay()}
-                                    >
-                                        ⇆
+                        {!isLoading && (
+                            <Typography variant="h2" align="center">
+                                {count}
+                                {avg !== undefined && (
+                                    <Typography align="center" style={{ color: "gray" }}>
+                                        ({getAvg(avg)})
                                     </Typography>
-                                </Typography>
-                            )}
-                        </Typography>
+                                )}
+                            </Typography>
+                        )}
+                        <IF condition={isLoading}>
+                            <Box width="min-content" mx="auto" mt={2}>
+                                <CircularProgress />
+                            </Box>
+                        </IF>
                     </Grid>
                     <Grid xs={3} display="flex" justifyContent="center" alignItems="center">
                         <Button onClick={onAdd} size="large" color="inherit" sx={{ fontSize: "1.5rem" }}>

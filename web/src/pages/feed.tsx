@@ -14,7 +14,7 @@ import { Container, Fab, Unstable_Grid2 as Grid } from "@mui/material";
 import axios from "axios";
 import { useEffect, useState } from "react";
 
-import { useNavigate } from "../router";
+import { useNavigate } from "@/router";
 
 type IDatas = Record<string, Array<IData>>;
 type ICounters = Record<string, string>;

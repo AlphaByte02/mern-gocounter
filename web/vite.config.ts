@@ -10,5 +10,11 @@ export default defineConfig({
             "/api": "http://localhost:8080",
         },
     },
-    resolve: { alias: { "@": "/src" } },
+    resolve: {
+        alias: {
+            "@": "./src",
+            "@components": "./src/components",
+            "@lib": "./src/lib",
+        },
+    },
 });

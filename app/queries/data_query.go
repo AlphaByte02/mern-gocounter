@@ -22,6 +22,10 @@ type ListOptions struct {
 	Ordering string
 }
 
+type CounterOptions struct {
+	Global bool
+}
+
 func (q *DataQueries) CreateData(newdata models.Data) (models.Data, error) {
 	var data models.Data
 
@@ -46,13 +50,13 @@ func (q *DataQueries) GetDatas(opts ListOptions) ([]models.Data, error) {
 	if opts.Ordering != "" {
 		if strings.HasPrefix(opts.Ordering, "-") {
 			key, _ := strings.CutPrefix(opts.Ordering, "-")
-			qopts = qopts.SetSort(bson.D{{Key: key, Value: -1}})
+			qopts.SetSort(bson.D{{Key: key, Value: -1}})
 		} else {
-			qopts = qopts.SetSort(bson.D{{Key: opts.Ordering, Value: 1}})
+			qopts.SetSort(bson.D{{Key: opts.Ordering, Value: 1}})
 		}
 	}
 	if opts.Limit != 0 {
-		qopts = qopts.SetLimit(opts.Limit)
+		qopts.SetLimit(opts.Limit)
 	}
 
 	cursor, err := q.Collection.Find(context.TODO(), bson.D{{}}, qopts)
@@ -83,15 +87,23 @@ func (q *DataQueries) GetData(dataID string) (models.Data, error) {
 	return data, nil
 }
 
-func (q *DataQueries) GetCounterSum(counterID string) (bson.M, error) {
+func (q *DataQueries) GetCounterSum(counter models.Counter, opts CounterOptions) (bson.M, error) {
 	var data bson.M
 
-	id, err := primitive.ObjectIDFromHex(counterID)
-	if err != nil {
-		return data, err
+	var softResetDate primitive.DateTime
+	if opts.Global || counter.SoftReset == nil {
+		softResetDate = primitive.NewDateTimeFromTime(time.Time{})
+	} else {
+		softResetDate = *counter.SoftReset
 	}
 
-	matchStage := bson.D{{Key: "$match", Value: bson.D{{Key: "counter_ref", Value: id}}}}
+	matchStage := bson.D{{
+		Key: "$match",
+		Value: bson.M{
+			"counter_ref": counter.ID,
+			"createdAt":   bson.M{"$gte": softResetDate},
+		},
+	}}
 	groupStage := bson.D{
 		{
 			Key: "$group",
@@ -120,15 +132,23 @@ func (q *DataQueries) GetCounterSum(counterID string) (bson.M, error) {
 	return data, nil
 }
 
-func (q *DataQueries) GetCounterAvg(counterID string) (bson.M, error) {
+func (q *DataQueries) GetCounterAvg(counter models.Counter, opts CounterOptions) (bson.M, error) {
 	var data bson.M
 
-	id, err := primitive.ObjectIDFromHex(counterID)
-	if err != nil {
-		return data, err
+	var softResetDate primitive.DateTime
+	if opts.Global || counter.SoftReset == nil {
+		softResetDate = primitive.NewDateTimeFromTime(time.Time{})
+	} else {
+		softResetDate = *counter.SoftReset
 	}
 
-	matchStage := bson.D{{Key: "$match", Value: bson.D{{Key: "counter_ref", Value: id}}}}
+	matchStage := bson.D{{
+		Key: "$match",
+		Value: bson.M{
+			"counter_ref": counter.ID,
+			"createdAt":   bson.M{"$gte": softResetDate},
+		},
+	}}
 	groupStage := bson.D{
 		{
 			Key: "$group",
@@ -162,15 +182,23 @@ func (q *DataQueries) GetCounterAvg(counterID string) (bson.M, error) {
 	return bson.M{"_id": data["_id"], "avg": avg}, nil
 }
 
-func (q *DataQueries) GetCounterStats(counterID string) (bson.M, error) {
+func (q *DataQueries) GetCounterStats(counter models.Counter, opts CounterOptions) (bson.M, error) {
 	var data bson.M
 
-	id, err := primitive.ObjectIDFromHex(counterID)
-	if err != nil {
-		return data, err
+	var softResetDate primitive.DateTime
+	if opts.Global || counter.SoftReset == nil {
+		softResetDate = primitive.NewDateTimeFromTime(time.Time{})
+	} else {
+		softResetDate = *counter.SoftReset
 	}
 
-	matchStage := bson.D{{Key: "$match", Value: bson.D{{Key: "counter_ref", Value: id}}}}
+	matchStage := bson.D{{
+		Key: "$match",
+		Value: bson.M{
+			"counter_ref": counter.ID,
+			"createdAt":   bson.M{"$gte": softResetDate},
+		},
+	}}
 	groupStage := bson.D{
 		{
 			Key: "$group",
@@ -195,6 +223,10 @@ func (q *DataQueries) GetCounterStats(counterID string) (bson.M, error) {
 	}
 	cursor.Decode(&data)
 
+	if data == nil {
+		return bson.M{"_id": counter.ID, "avg": 0, "total": 0, "days": 0}, nil
+	}
+
 	fd := data["firstDate"].(primitive.DateTime).Time().UTC()
 	ld := time.Now().UTC()
 	total := data["total"].(int32)
@@ -205,15 +237,21 @@ func (q *DataQueries) GetCounterStats(counterID string) (bson.M, error) {
 	return bson.M{"_id": data["_id"], "avg": avg, "total": total, "days": days}, nil
 }
 
-func (q *DataQueries) GetCounterData(counterID string) ([]models.Data, error) {
+func (q *DataQueries) GetCounterData(counter models.Counter, opts CounterOptions) ([]models.Data, error) {
 	var data []models.Data
 
-	id, err := primitive.ObjectIDFromHex(counterID)
-	if err != nil {
-		return data, err
+	var softResetDate primitive.DateTime
+	if opts.Global || counter.SoftReset == nil {
+		softResetDate = primitive.NewDateTimeFromTime(time.Time{})
+	} else {
+		softResetDate = *counter.SoftReset
 	}
 
-	filters := bson.D{{Key: "counter_ref", Value: id}}
+	filters := bson.M{
+		"counter_ref": counter.ID,
+		"createdAt":   bson.M{"$gte": softResetDate},
+	}
+
 	cursor, err := q.Collection.Find(context.TODO(), filters)
 	if err != nil {
 		return data, err
@@ -225,16 +263,24 @@ func (q *DataQueries) GetCounterData(counterID string) ([]models.Data, error) {
 	return data, nil
 }
 
-func (q *DataQueries) GetCounterDataByMonth(counterID string) ([]bson.M, error) {
+func (q *DataQueries) GetCounterDataByMonth(counter models.Counter, opts CounterOptions) ([]bson.M, error) {
 	var data []bson.M
 
-	id, err := primitive.ObjectIDFromHex(counterID)
-	if err != nil {
-		return data, err
+	var softResetDate primitive.DateTime
+	if opts.Global || counter.SoftReset == nil {
+		softResetDate = primitive.NewDateTimeFromTime(time.Time{})
+	} else {
+		softResetDate = *counter.SoftReset
 	}
 
 	firstSortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "updatedAr", Value: 1}}}}
-	matchStage := bson.D{{Key: "$match", Value: bson.D{{Key: "counter_ref", Value: id}}}}
+	matchStage := bson.D{{
+		Key: "$match",
+		Value: bson.M{
+			"counter_ref": counter.ID,
+			"createdAt":   bson.M{"$gte": softResetDate},
+		},
+	}}
 	groupStage := bson.D{
 		{
 			Key: "$group",

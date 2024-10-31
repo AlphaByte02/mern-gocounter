@@ -12,6 +12,7 @@ func SetRoutes(a *fiber.App) {
 	route.Get("/counters", v1.GetCounters)
 	route.Post("/counters", v1.CreateCounter)
 	route.Get("/counters/:id", v1.GetCounter)
+	route.Patch("/counters/:id", v1.EditCounter)
 	route.Delete("/counters/:id", v1.DeleteCounter)
 	route.Get("/counters/:id/data", v1.GetCounterData)
 	route.Get("/counters/:id/dataByMonth", v1.GetCounterDataByMonth)
