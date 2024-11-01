@@ -12,9 +12,9 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            "@": "./src",
-            "@components": "./src/components",
-            "@lib": "./src/lib",
+            "@": "/src",
+            "@components": "/src/components",
+            "@lib": "/src/lib",
         },
     },
 });

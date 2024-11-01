@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import type { ICounter, IData } from "../lib/models";
+import type { ICounter, IData } from "@lib/models";
 
 import {
     Timeline,
