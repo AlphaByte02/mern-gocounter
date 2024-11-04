@@ -14,7 +14,7 @@ ChartJs.register(zoomPlugin, Colors);
 import ButtonGroupRadio from "@components/ButtonGroupRadio";
 import IF from "@components/IF";
 
-import { dateRange, daysInMonth, roundDecimal } from "@lib/helpers";
+import { dateRange, daysInMonth, daysInYear, roundDecimal } from "@lib/helpers";
 
 import { Link, useParams } from "@/router";
 
@@ -32,7 +32,11 @@ const COMMON_GRAPH_OPTIONS: ChartOptions<"bar" | "line"> = {
             ticks: {
                 precision: 1,
                 stepSize: 1,
-                color: "#FFFFFFD9",
+                // color: "#FFFFFFD9",
+            },
+            title: {
+                display: true,
+                text: "TOT",
             },
         },
         x: {
@@ -43,52 +47,156 @@ const COMMON_GRAPH_OPTIONS: ChartOptions<"bar" | "line"> = {
     },
 };
 
-const MONTH = ["GEN", "FEB", "MAR", "APR", "MAG", "GIU", "LUG", "AGO", "SET", "OTT", "NOV", "DIC"];
-function MonthGraph({ data }: { data: IData[] }) {
+function YearlyGraph({ data }: { data: IData[] }) {
     const dataset = useMemo<ChartData<"bar" | "line">>(() => {
-        const labels = [];
-        const ds = [];
+        const yearlyDataMap = new Map();
+        let firstDate: Date;
 
-        const avgDatasetMonth: { month: number; year: number; firstday: number }[] = [];
-        for (const singleData of data) {
-            const createdAt = new Date(singleData.createdAt);
-            const dateString = `${MONTH[createdAt.getMonth()]} ${createdAt.getFullYear()}`;
-            if (labels.indexOf(dateString) == -1) {
-                labels.push(dateString);
-                ds.push(singleData.number);
-                avgDatasetMonth.push({
-                    month: createdAt.getMonth(),
-                    year: createdAt.getFullYear(),
-                    firstday: createdAt.getDate(),
-                });
+        // Aggrega i dati per anno e trova la prima data
+        data.forEach(({ createdAt, number }) => {
+            const date = new Date(createdAt);
+            const year = date.getFullYear();
+
+            if (!firstDate || date < firstDate) {
+                firstDate = date;
+            }
+
+            if (!yearlyDataMap.has(year)) {
+                yearlyDataMap.set(year, { total: 0 });
+            }
+            yearlyDataMap.get(year).total += number;
+        });
+
+        const labels: string[] = [];
+        const totalData: number[] = [];
+        const avgData: number[] = [];
+
+        // Calcola i dati per ogni anno
+        yearlyDataMap.forEach(({ total }, year) => {
+            labels.push(year.toString());
+            totalData.push(total);
+
+            let daysForAvg;
+            if (year === firstDate.getFullYear()) {
+                // Per il primo anno, calcola i giorni dalla prima data alla fine dell'anno
+                const lastDayOfYear = new Date(year, 11, 31);
+                daysForAvg = Math.floor((+lastDayOfYear - +firstDate) / (1000 * 60 * 60 * 24)) + 1;
             } else {
-                ds[labels.indexOf(dateString)] += singleData.number;
+                // Per gli altri anni, considera l'intero anno
+                daysForAvg = daysInYear(year);
             }
-        }
 
-        const now = new Date();
-        const datasetsavg = ds.map((e, i) => {
-            let numDay = now.getDate();
-
-            // se il mese e l'anno NON sono quelli di adesso
-            if (!(now.getMonth() == avgDatasetMonth[i].month && now.getFullYear() == avgDatasetMonth[i].year)) {
-                if (i == 0) {
-                    numDay =
-                        daysInMonth(avgDatasetMonth[i].month, avgDatasetMonth[i].year) - avgDatasetMonth[i].firstday;
-                } else {
-                    numDay = daysInMonth(avgDatasetMonth[i].month, avgDatasetMonth[i].year);
-                }
-            }
-            return roundDecimal(e / numDay, 2);
+            const yearlyAvg = roundDecimal(total / daysForAvg, 2);
+            avgData.push(yearlyAvg);
         });
 
         return {
-            labels: labels,
+            labels,
+            datasets: [
+                {
+                    label: "Total Annual Sum",
+                    type: "bar",
+                    data: totalData,
+                    order: 1,
+                },
+                {
+                    label: "Annual Average",
+                    type: "line",
+                    borderWidth: 2,
+                    tension: 0.4,
+                    data: avgData,
+                    order: 0,
+                    yAxisID: "y1",
+                },
+            ],
+        };
+    }, [data]);
+
+    const OPTIONS: ChartOptions<"bar" | "line"> = {
+        ...COMMON_GRAPH_OPTIONS,
+        responsive: true,
+        scales: {
+            ...COMMON_GRAPH_OPTIONS.scales,
+            y1: {
+                type: "logarithmic",
+                position: "right",
+                suggestedMin: 0,
+                suggestedMax: 2,
+                title: {
+                    display: true,
+                    text: "Annual Average",
+                },
+                grid: {
+                    drawOnChartArea: false, // rimuove la griglia sul secondo asse per maggiore chiarezza
+                },
+            },
+        },
+    };
+
+    return <Chart type="bar" data={dataset} options={OPTIONS} />;
+}
+
+const MONTH = ["GEN", "FEB", "MAR", "APR", "MAG", "GIU", "LUG", "AGO", "SET", "OTT", "NOV", "DIC"];
+function MonthGraph({ data }: { data: IData[] }) {
+    const dataset = useMemo<ChartData<"bar" | "line">>(() => {
+        const monthlyDataMap = new Map<string, { total: number; firstDay: number; year: number; month: number }>();
+
+        // Aggrega i dati per mese e anno
+        data.forEach(({ createdAt, number }) => {
+            const date = new Date(createdAt);
+            const key = `${date.getFullYear()}-${date.getMonth()}`;
+            const dmap = monthlyDataMap.get(key);
+            if (!dmap) {
+                monthlyDataMap.set(key, {
+                    total: number,
+                    firstDay: date.getDate(),
+                    year: date.getFullYear(),
+                    month: date.getMonth(),
+                });
+            } else {
+                dmap.total += number;
+            }
+        });
+
+        const labels: string[] = [];
+        const totalData: number[] = [];
+        const avgData: number[] = [];
+        const cumulativeAvgData: number[] = [];
+        let cumulativeSum: number = 0;
+        let cumulativeMonths: number = 0;
+
+        const now = new Date();
+
+        // Calcola i dati per ogni mese
+        monthlyDataMap.forEach(({ total, firstDay, year, month }) => {
+            labels.push(`${MONTH[month]} ${year}`);
+            totalData.push(total);
+
+            const isCurrentMonth = now.getMonth() === month && now.getFullYear() === year;
+            const numDays = isCurrentMonth
+                ? now.getDate()
+                : cumulativeMonths == 0
+                  ? daysInMonth(month, year) - firstDay
+                  : daysInMonth(month, year);
+
+            // Calcola media mensile
+            const monthlyAvg = roundDecimal(total / numDays, 2);
+            avgData.push(monthlyAvg);
+
+            // Calcola media cumulativa
+            cumulativeSum += total;
+            cumulativeMonths++;
+            const cumulativeAvg = roundDecimal(cumulativeSum / cumulativeMonths, 2);
+            cumulativeAvgData.push(cumulativeAvg);
+        });
+
+        return {
+            labels,
             datasets: [
                 {
                     label: "TOT",
                     type: "bar",
-                    data: ds,
+                    data: totalData,
                     order: 1,
                 },
                 {
@@ -96,7 +204,16 @@ function MonthGraph({ data }: { data: IData[] }) {
                     type: "line",
                     borderWidth: 2,
                     tension: 0.4,
-                    data: datasetsavg,
+                    data: avgData,
+                    order: 0,
+                },
+                {
+                    label: "CUMULATIVE AVG",
+                    type: "line",
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    tension: 0.4,
+                    data: cumulativeAvgData,
                     order: 0,
                 },
             ],
@@ -226,6 +343,7 @@ export default function Graph() {
         WEEK: 2,
         DAY: 3,
         HOUR: 4,
+        YEAR: 5,
     };
 
     const [dataset, setDataset] = useState<IData[]>([]);
@@ -261,12 +379,13 @@ export default function Graph() {
                     <ButtonGroupRadio
                         disabled={isLoading || dataset?.length === 0}
                         buttons={[
+                            { label: "Year", callback: () => setCurrentView(ViewEnum.YEAR) },
                             { label: "Month", callback: () => setCurrentView(ViewEnum.MONTH) },
                             { label: "Week Day", callback: () => setCurrentView(ViewEnum.WEEK) },
-                            { label: "Hour", callback: () => setCurrentView(ViewEnum.HOUR) },
                             { label: "Day", callback: () => setCurrentView(ViewEnum.DAY) },
+                            { label: "Hour", callback: () => setCurrentView(ViewEnum.HOUR) },
                         ]}
-                        defaultSelected={ViewEnum.MONTH - 1}
+                        defaultSelected={1}
                     />
                 </Grid>
             </Grid>
@@ -294,6 +413,9 @@ export default function Graph() {
                     </IF>
                     <IF condition={!isLoading && dataset.length > 0 && currentView === ViewEnum.HOUR}>
                         <HourGraph data={dataset} />
+                    </IF>
+                    <IF condition={!isLoading && dataset.length > 0 && currentView === ViewEnum.YEAR}>
+                        <YearlyGraph data={dataset} />
                     </IF>
                     <IF condition={isLoading}>
                         <div style={{ textAlign: "center" }}>

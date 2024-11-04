@@ -1,6 +1,6 @@
 import type { AvgDisplayType } from "@lib/models";
 
-import { Box, Button, CircularProgress, Unstable_Grid2 as Grid, Paper, Typography } from "@mui/material";
+import { Box, Button, Unstable_Grid2 as Grid, Paper, Skeleton, Typography } from "@mui/material";
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 
@@ -20,6 +20,7 @@ type CounterProps = {
 
 const Counter = ({ id, name, avgDisplay = "numeric", global = false, onEdit }: CounterProps) => {
     const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [count, setCount] = useState(0);
 
@@ -39,7 +40,6 @@ const Counter = ({ id, name, avgDisplay = "numeric", global = false, onEdit }: C
     );
 
     const setStats = useCallback(() => {
-        setIsLoading(true);
         axios
             .get(`/api/v1/counters/${id}/stats`, { params: { global: global } })
             .then(({ data }) => {
@@ -49,6 +49,7 @@ const Counter = ({ id, name, avgDisplay = "numeric", global = false, onEdit }: C
             .catch(() => {})
             .finally(() => {
                 setIsLoading(false);
+                setIsSubmitting(false);
             });
     }, [global, id]);
 
@@ -57,13 +58,17 @@ const Counter = ({ id, name, avgDisplay = "numeric", global = false, onEdit }: C
     }, [setStats]);
 
     function submit(value: number) {
+        setIsSubmitting(true);
         axios
             .post("/api/v1/datas", {
                 number: value,
                 counterRef: id,
             })
             .then(() => setStats())
-            .catch(() => {});
+            .catch(() => {})
+            .finally(() => {
+                setIsSubmitting(false);
+            });
     }
 
     function onSub() {
@@ -91,7 +96,13 @@ const Counter = ({ id, name, avgDisplay = "numeric", global = false, onEdit }: C
 
                 <Grid xs={12} container sx={{ marginBottom: ".5rem" }}>
                     <Grid xs={3} display="flex" justifyContent="center" alignItems="center">
-                        <Button onClick={onSub} size="large" color="inherit" sx={{ fontSize: "1.5rem" }}>
+                        <Button
+                            disabled={isSubmitting}
+                            onClick={onSub}
+                            size="large"
+                            color="inherit"
+                            sx={{ fontSize: "1.5rem" }}
+                        >
                             -1
                         </Button>
                     </Grid>
@@ -107,13 +118,20 @@ const Counter = ({ id, name, avgDisplay = "numeric", global = false, onEdit }: C
                             </Typography>
                         )}
                         <IF condition={isLoading}>
-                            <Box width="min-content" mx="auto" mt={2}>
-                                <CircularProgress />
+                            <Box width="min-content" mx="auto">
+                                <Skeleton variant="rounded" width={225} height={64} sx={{ marginBottom: 1 }} />
+                                <Skeleton variant="rounded" width={150} height={24} sx={{ margin: "auto" }} />
                             </Box>
                         </IF>
                     </Grid>
                     <Grid xs={3} display="flex" justifyContent="center" alignItems="center">
-                        <Button onClick={onAdd} size="large" color="inherit" sx={{ fontSize: "1.5rem" }}>
+                        <Button
+                            disabled={isSubmitting}
+                            onClick={onAdd}
+                            size="large"
+                            color="inherit"
+                            sx={{ fontSize: "1.5rem" }}
+                        >
                             +1
                         </Button>
                     </Grid>

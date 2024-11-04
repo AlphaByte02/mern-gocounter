@@ -76,6 +76,9 @@ const CounterDrawer = ({ open, counter: initCounter, onClose, onSubmit, onDelete
                     align="center"
                 />
                 <Stack height="100%" pt={8} justifyContent="start" alignItems="center">
+                    <Typography variant="h5" mb={1}>
+                        Soft Reset
+                    </Typography>
                     <Stack direction="row" width="100%" justifyContent="center" alignItems="center" spacing={2}>
                         {counter?.softReset && (
                             <Typography component="span" align="center">

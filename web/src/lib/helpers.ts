@@ -19,7 +19,7 @@ export function isEmpty(element: unknown) {
     }
 }
 
-export function daysInMonth(month: number, year: number): number {
+export function daysInMonth(month?: number, year?: number): number {
     const now = new Date();
     if (!year) {
         year = now.getFullYear();
@@ -29,6 +29,14 @@ export function daysInMonth(month: number, year: number): number {
     }
 
     return new Date(year, month + 1, 0).getDate();
+}
+
+export function isLeapYear(year: number) {
+    return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+export function daysInYear(year: number) {
+    return isLeapYear(year) ? 366 : 365;
 }
 
 export function roundDecimal(num: number, n: number = 1): number {
