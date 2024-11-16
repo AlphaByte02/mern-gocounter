@@ -72,12 +72,16 @@ function YearlyGraph({ data }: { data: IData[] }) {
         const avgData: number[] = [];
 
         // Calcola i dati per ogni anno
+        const now = new Date();
         yearlyDataMap.forEach(({ total }, year) => {
             labels.push(year.toString());
             totalData.push(total);
 
             let daysForAvg;
-            if (year === firstDate.getFullYear()) {
+            if (year === now.getFullYear()) {
+                const firstDay = year === firstDate.getFullYear() ? firstDate : new Date(year, 0, 1);
+                daysForAvg = Math.floor((+now - +firstDay) / (1000 * 60 * 60 * 24)) + 1;
+            } else if (year === firstDate.getFullYear()) {
                 // Per il primo anno, calcola i giorni dalla prima data alla fine dell'anno
                 const lastDayOfYear = new Date(year, 11, 31);
                 daysForAvg = Math.floor((+lastDayOfYear - +firstDate) / (1000 * 60 * 60 * 24)) + 1;

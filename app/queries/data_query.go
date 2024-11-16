@@ -223,15 +223,20 @@ func (q *DataQueries) GetCounterStats(counter models.Counter, opts CounterOption
 	}
 	cursor.Decode(&data)
 
+	now := time.Now().UTC()
 	if data == nil {
-		return bson.M{"_id": counter.ID, "avg": 0, "total": 0, "days": 0}, nil
+		var days float64 = 0
+		if counter.SoftReset != nil {
+			days = math.Ceil(now.Sub(counter.SoftReset.Time().UTC()).Hours() / 24)
+		}
+
+		return bson.M{"_id": counter.ID, "avg": 0, "total": 0, "days": days}, nil
 	}
 
 	fd := data["firstDate"].(primitive.DateTime).Time().UTC()
-	ld := time.Now().UTC()
 	total := data["total"].(int32)
 
-	days := math.Ceil(ld.Sub(fd).Hours() / 24)
+	days := math.Ceil(now.Sub(fd).Hours() / 24)
 	avg := float64(total) / days
 
 	return bson.M{"_id": data["_id"], "avg": avg, "total": total, "days": days}, nil
