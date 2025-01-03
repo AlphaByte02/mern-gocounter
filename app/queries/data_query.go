@@ -225,7 +225,7 @@ func (q *DataQueries) GetCounterStats(counter models.Counter, opts CounterOption
 
 	now := time.Now().UTC()
 	var days float64 = 0
-	if counter.SoftReset != nil {
+	if !opts.Global && counter.SoftReset != nil {
 		days = math.Ceil(now.Sub(counter.SoftReset.Time().UTC()).Hours() / 24)
 	}
 	if data == nil {
