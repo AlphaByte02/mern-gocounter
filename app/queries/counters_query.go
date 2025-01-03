@@ -3,7 +3,6 @@ package queries
 import (
 	"context"
 	"main/app/models"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -67,7 +66,7 @@ func (q *CounterQueries) EditCounter(counter models.Counter) (bool, error) {
 		"$set": bson.M{
 			"name":      counter.Name,
 			"softReset": counter.SoftReset,
-			"updatedAt": primitive.NewDateTimeFromTime(time.Now()),
+			"updatedAt": counter.UpdatedAt,
 		},
 	}
 	res, err := q.Collection.UpdateByID(context.TODO(), counter.ID, update)

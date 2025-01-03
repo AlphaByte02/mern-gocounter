@@ -75,6 +75,10 @@ func EditCounter(c *fiber.Ctx) error {
 		})
 	}
 
+	if len(updatedData) == 0 {
+		return c.Status(fiber.StatusNotModified).JSON(counter)
+	}
+
 	if softReset, ok := updatedData["softReset"]; softReset == nil && ok {
 		counter.SoftReset = nil
 	} else if softReset, ok := updatedData["softReset"].(string); ok && softReset != "" {
@@ -87,6 +91,7 @@ func EditCounter(c *fiber.Ctx) error {
 		counter.Name = name
 	}
 
+	counter.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 	if ok, err := db.Q.EditCounter(counter); !ok || err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(err)
 	}

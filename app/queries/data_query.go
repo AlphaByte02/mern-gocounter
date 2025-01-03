@@ -231,11 +231,12 @@ func (q *DataQueries) GetCounterStats(counter models.Counter, opts CounterOption
 	if data == nil {
 		return bson.M{"_id": counter.ID, "avg": 0, "total": 0, "days": days}, nil
 	}
+	if days == 0 {
+		fd := data["firstDate"].(primitive.DateTime).Time().UTC()
+		days = math.Ceil(now.Sub(fd).Hours() / 24)
+	}
 
-	fd := data["firstDate"].(primitive.DateTime).Time().UTC()
 	total := data["total"].(int32)
-
-	days = math.Ceil(now.Sub(fd).Hours() / 24)
 	avg := float64(total) / days
 
 	return bson.M{"_id": data["_id"], "avg": avg, "total": total, "days": days}, nil
