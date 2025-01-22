@@ -54,6 +54,8 @@ func (q *DataQueries) GetDatas(opts ListOptions) ([]models.Data, error) {
 		} else {
 			qopts.SetSort(bson.D{{Key: opts.Ordering, Value: 1}})
 		}
+	} else {
+		qopts.SetSort(bson.D{{Key: "createdAt", Value: 1}})
 	}
 	if opts.Limit != 0 {
 		qopts.SetLimit(opts.Limit)
@@ -104,6 +106,10 @@ func (q *DataQueries) GetCounterSum(counter models.Counter, opts CounterOptions)
 			"createdAt":   bson.M{"$gte": softResetDate},
 		},
 	}}
+	sortStage := bson.D{{
+		Key:   "$sort",
+		Value: bson.D{{Key: "createdAt", Value: 1}},
+	}}
 	groupStage := bson.D{
 		{
 			Key: "$group",
@@ -116,7 +122,7 @@ func (q *DataQueries) GetCounterSum(counter models.Counter, opts CounterOptions)
 			},
 		}}
 
-	pipeline := mongo.Pipeline{matchStage, groupStage}
+	pipeline := mongo.Pipeline{matchStage, sortStage, groupStage}
 	cursor, err := q.Collection.Aggregate(context.TODO(), pipeline)
 	if err != nil {
 		return data, err
@@ -149,6 +155,10 @@ func (q *DataQueries) GetCounterAvg(counter models.Counter, opts CounterOptions)
 			"createdAt":   bson.M{"$gte": softResetDate},
 		},
 	}}
+	sortStage := bson.D{{
+		Key:   "$sort",
+		Value: bson.D{{Key: "createdAt", Value: 1}},
+	}}
 	groupStage := bson.D{
 		{
 			Key: "$group",
@@ -160,7 +170,7 @@ func (q *DataQueries) GetCounterAvg(counter models.Counter, opts CounterOptions)
 			},
 		}}
 
-	pipeline := mongo.Pipeline{matchStage, groupStage}
+	pipeline := mongo.Pipeline{matchStage, sortStage, groupStage}
 	cursor, err := q.Collection.Aggregate(context.TODO(), pipeline)
 	if err != nil {
 		return data, err
@@ -199,6 +209,10 @@ func (q *DataQueries) GetCounterStats(counter models.Counter, opts CounterOption
 			"createdAt":   bson.M{"$gte": softResetDate},
 		},
 	}}
+	sortStage := bson.D{{
+		Key:   "$sort",
+		Value: bson.D{{Key: "createdAt", Value: 1}},
+	}}
 	groupStage := bson.D{
 		{
 			Key: "$group",
@@ -210,7 +224,7 @@ func (q *DataQueries) GetCounterStats(counter models.Counter, opts CounterOption
 			},
 		}}
 
-	pipeline := mongo.Pipeline{matchStage, groupStage}
+	pipeline := mongo.Pipeline{matchStage, sortStage, groupStage}
 	cursor, err := q.Collection.Aggregate(context.TODO(), pipeline)
 	if err != nil {
 		return data, err
@@ -257,7 +271,8 @@ func (q *DataQueries) GetCounterData(counter models.Counter, opts CounterOptions
 		"createdAt":   bson.M{"$gte": softResetDate},
 	}
 
-	cursor, err := q.Collection.Find(context.TODO(), filters)
+	findOpts := options.Find().SetSort(bson.D{{Key: "createdAt", Value: 1}})
+	cursor, err := q.Collection.Find(context.TODO(), filters, findOpts)
 	if err != nil {
 		return data, err
 	}
@@ -278,7 +293,7 @@ func (q *DataQueries) GetCounterDataByMonth(counter models.Counter, opts Counter
 		softResetDate = *counter.SoftReset
 	}
 
-	firstSortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "updatedAr", Value: 1}}}}
+	firstSortStage := bson.D{{Key: "$sort", Value: bson.D{{Key: "updatedAt", Value: 1}}}}
 	matchStage := bson.D{{
 		Key: "$match",
 		Value: bson.M{

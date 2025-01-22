@@ -23,7 +23,9 @@ func CreateData(c *fiber.Ctx) error {
 	}
 
 	// data.ID = primitive.NewObjectID()
-	data.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
+	if data.CreatedAt == 0 {
+		data.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
+	}
 	data.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 
 	dbdata, err := db.Q.CreateData(data)

@@ -1,5 +1,9 @@
 import { CssBaseline, ThemeProvider, createTheme, responsiveFontSizes } from "@mui/material";
 import { Outlet } from "react-router-dom";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+
+import "dayjs/locale/it";
 
 let darkTheme = createTheme({
     palette: {
@@ -15,12 +19,14 @@ darkTheme = responsiveFontSizes(darkTheme, { factor: 4 });
 export default function App() {
     return (
         <ThemeProvider theme={darkTheme}>
-            <CssBaseline />
-            <section>
-                <main>
-                    <Outlet />
-                </main>
-            </section>
+            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="it">
+                <CssBaseline />
+                <section>
+                    <main>
+                        <Outlet />
+                    </main>
+                </section>
+            </LocalizationProvider>
         </ThemeProvider>
     );
 }

@@ -85,6 +85,9 @@ function YearlyGraph({ data }: { data: IData[] }) {
                 // Per il primo anno, calcola i giorni dalla prima data alla fine dell'anno
                 const lastDayOfYear = new Date(year, 11, 31);
                 daysForAvg = Math.floor((+lastDayOfYear - +firstDate) / (1000 * 60 * 60 * 24)) + 1;
+                if (daysForAvg === 0) {
+                    daysForAvg = 1;
+                }
             } else {
                 // Per gli altri anni, considera l'intero anno
                 daysForAvg = daysInYear(year);
@@ -262,9 +265,6 @@ function DayGraph({ data }: { data: IData[] }) {
         const ds = [];
 
         for (const singleData of data) {
-            const d = new Date(singleData.createdAt);
-            console.log(singleData.createdAt, d, d.getHours());
-
             const dateString = getDateLabel(new Date(singleData.createdAt));
             temp[dateString] = (temp?.[dateString] || 0) + singleData.number;
         }

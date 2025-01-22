@@ -1,7 +1,23 @@
 import type { AvgDisplayType } from "@lib/models";
 
-import { Box, Button, Unstable_Grid2 as Grid, Paper, Skeleton, Typography } from "@mui/material";
+import {
+    Box,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Unstable_Grid2 as Grid,
+    Menu,
+    MenuItem,
+    Paper,
+    Skeleton,
+    TextField,
+    Typography,
+} from "@mui/material";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import axios from "axios";
+import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 
 import { humanizeAvg, roundDecimal } from "@lib/helpers";
@@ -9,6 +25,64 @@ import { humanizeAvg, roundDecimal } from "@lib/helpers";
 import IF from "@components/IF";
 
 import { Link } from "@/router";
+
+type AddProps = {
+    value: number;
+    date: dayjs.Dayjs | null;
+};
+
+type CustomAddDialogProps = {
+    open: boolean;
+    onConfirm: (values: AddProps) => void;
+    onClose: () => void;
+};
+
+const CustomAddDialog = ({ open, onConfirm, onClose }: CustomAddDialogProps) => {
+    const [values, setValues] = useState<AddProps>({ value: 1, date: dayjs() });
+
+    function onFinish() {
+        onConfirm?.(values);
+        setValues({ value: 1, date: dayjs() });
+    }
+
+    function handleOnClose() {
+        setValues({ value: 1, date: dayjs() });
+        onClose?.();
+    }
+
+    return (
+        <Dialog fullWidth={true} maxWidth="sm" open={open} onClose={handleOnClose}>
+            <DialogTitle>Aggiungi Counter</DialogTitle>
+            <DialogContent>
+                <TextField
+                    type="number"
+                    label="Value"
+                    defaultValue={1}
+                    onChange={(event) => {
+                        setValues((ov) => ({ ...ov, value: +event.target.value }));
+                    }}
+                />
+                <br />
+                <br />
+                <DateTimePicker
+                    disableFuture
+                    label="Giorno"
+                    defaultValue={dayjs()}
+                    value={values.date}
+                    onChange={(d) => setValues((ov) => ({ ...ov, date: d }))}
+                />
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={onClose} color="secondary">
+                    Cancella
+                </Button>
+                <Button onClick={onFinish} color="primary">
+                    Aggiungi
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
+};
 
 type CounterProps = {
     id: string;
@@ -21,6 +95,7 @@ type CounterProps = {
 const Counter = ({ id, name, avgDisplay = "numeric", global = false, onEdit }: CounterProps) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isCustomAddDialogOpen, setIsCustomAddDialogOpen] = useState(false);
 
     const [count, setCount] = useState(0);
 
@@ -57,13 +132,19 @@ const Counter = ({ id, name, avgDisplay = "numeric", global = false, onEdit }: C
         setStats();
     }, [setStats]);
 
-    function submit(value: number) {
+    function submit(value: number, date: Date | undefined = undefined) {
         setIsSubmitting(true);
+
+        const values: { number: number; counterRef: string; createdAt?: Date } = {
+            number: value,
+            counterRef: id,
+        };
+        if (date) {
+            values.createdAt = date;
+        }
+
         axios
-            .post("/api/v1/datas", {
-                number: value,
-                counterRef: id,
-            })
+            .post("/api/v1/datas", values)
             .then(() => setStats())
             .catch(() => {})
             .finally(() => {
@@ -77,6 +158,22 @@ const Counter = ({ id, name, avgDisplay = "numeric", global = false, onEdit }: C
     function onAdd() {
         submit(1);
     }
+
+    const [contextMenu, setContextMenu] = useState<{ mouseX: number; mouseY: number } | null>(null);
+
+    const handleContextMenu = (event: React.MouseEvent) => {
+        event.preventDefault();
+        setContextMenu(contextMenu === null ? { mouseX: event.clientX + 2, mouseY: event.clientY - 6 } : null);
+    };
+
+    const handleCustomAdd = () => {
+        setContextMenu(null);
+        setIsCustomAddDialogOpen(true);
+    };
+
+    const handleClose = () => {
+        setContextMenu(null);
+    };
 
     return (
         <Paper elevation={3} style={{ padding: "0.5em 1em" }}>
@@ -99,6 +196,7 @@ const Counter = ({ id, name, avgDisplay = "numeric", global = false, onEdit }: C
                         <Button
                             disabled={isSubmitting}
                             onClick={onSub}
+                            onContextMenu={handleContextMenu}
                             size="large"
                             color="inherit"
                             sx={{ fontSize: "1.5rem" }}
@@ -128,6 +226,7 @@ const Counter = ({ id, name, avgDisplay = "numeric", global = false, onEdit }: C
                         <Button
                             disabled={isSubmitting}
                             onClick={onAdd}
+                            onContextMenu={handleContextMenu}
                             size="large"
                             color="inherit"
                             sx={{ fontSize: "1.5rem" }}
@@ -145,6 +244,24 @@ const Counter = ({ id, name, avgDisplay = "numeric", global = false, onEdit }: C
                     </Typography>
                 </Grid>
             </Grid>
+            <Menu
+                open={contextMenu !== null}
+                onClose={handleClose}
+                anchorReference="anchorPosition"
+                anchorPosition={
+                    contextMenu !== null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined
+                }
+            >
+                <MenuItem onClick={handleCustomAdd}>Custom Add</MenuItem>
+            </Menu>
+            <CustomAddDialog
+                open={isCustomAddDialogOpen}
+                onConfirm={(values) => {
+                    submit(values.value, values.date?.toDate());
+                    setIsCustomAddDialogOpen(false);
+                }}
+                onClose={() => setIsCustomAddDialogOpen(false)}
+            />
         </Paper>
     );
 };
