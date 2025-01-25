@@ -35,7 +35,7 @@ function Feed() {
                 .catch(() => {});
 
             axios
-                .get("/api/v1/datas?o=-_id&limit=200")
+                .get("/api/v1/datas?o=-createdAt&limit=200")
                 .then(({ data: rd }: { data: IData[] }) => {
                     const newdatas: IDatas = {};
 
