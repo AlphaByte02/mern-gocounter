@@ -23,4 +23,5 @@ func SetRoutes(a *fiber.App) {
 	route.Post("/datas", v1.CreateData)
 	route.Get("/datas", v1.GetDatas)
 	route.Get("/datas/:id", v1.GetData)
+	route.Delete("/datas/:id", v1.DeleteData)
 }
