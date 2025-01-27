@@ -79,3 +79,15 @@ func GetData(c *fiber.Ctx) error {
 
 	return c.JSON(datas)
 }
+
+func DeleteData(c *fiber.Ctx) error {
+	deleted, err := db.Q.DeleteData(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": true,
+			"msg":   err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{"success": deleted})
+}

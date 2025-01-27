@@ -89,6 +89,21 @@ func (q *DataQueries) GetData(dataID string) (models.Data, error) {
 	return data, nil
 }
 
+func (q *DataQueries) DeleteData(dataID string) (bool, error) {
+	id, err := primitive.ObjectIDFromHex(dataID)
+	if err != nil {
+		return false, err
+	}
+
+	filters := bson.D{{Key: "_id", Value: id}}
+	res, err := q.Collection.DeleteOne(context.TODO(), filters)
+	if err != nil {
+		return false, err
+	}
+
+	return res.DeletedCount == 1, nil
+}
+
 func (q *DataQueries) GetCounterSum(counter models.Counter, opts CounterOptions) (bson.M, error) {
 	var data bson.M
 
